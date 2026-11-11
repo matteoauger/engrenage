@@ -8,4 +8,10 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  server: {
+    proxy: {
+      // Frontend dev server forwards API calls to the axum backend.
+      '/api': 'http://127.0.0.1:8080'
+    }
+  }
 })

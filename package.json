@@ -1,0 +1,15 @@
+{
+  "name": "engrenage",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w web",
+    "dev:backend": "bacon run",
+    "build": "npm run build -w web && cargo build",
+    "test": "cargo test",
+    "lint": "npm run lint -w web && cargo clippy --all-targets -- -D warnings"
+  }
+}
