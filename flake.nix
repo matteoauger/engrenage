@@ -42,6 +42,7 @@
               sqlite
               sqlite-analyzer
               sqlitebrowser
+              github-cli
             ];
           };
         }
