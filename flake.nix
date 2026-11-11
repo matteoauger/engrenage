@@ -34,15 +34,26 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
+              # Rust toolchain
               rust-bin.stable.latest.default
               rust-analyzer
+              bacon
+
+              # Node toolchain
               nodejs_latest
-              pkg-config
-              clang
+
+              # DB toolchain
               sqlite
               sqlite-analyzer
               sqlitebrowser
+
+              # Extra tools
               github-cli
+              bruno
+
+              # Extra deps
+              pkg-config
+              clang
             ];
           };
         }
