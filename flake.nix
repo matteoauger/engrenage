@@ -51,6 +51,10 @@
               github-cli
               bruno
 
+              # Natively built chromium for the e2e suite on NixOS
+              # (e2e/playwright.config.ts picks it up from PATH).
+              chromium
+
               # Extra deps
               pkg-config
               clang

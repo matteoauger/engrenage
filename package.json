@@ -3,13 +3,16 @@
     "private": true,
     "version": "0.1.0",
     "workspaces": [
-        "web"
+        "web",
+        "e2e"
     ],
     "scripts": {
         "dev:frontend": "npm run dev -w web",
         "dev:backend": "bacon run",
         "build": "npm run build -w web && cargo build",
         "test": "cargo test",
+        "test:e2e": "npm run test -w e2e",
+        "prettier:check": "npm run prettier:check -w web",
         "lint": "npm run lint -w web && cargo clippy --all-targets -- -D warnings"
     }
 }
