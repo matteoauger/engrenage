@@ -1,0 +1,61 @@
+name: Release
+
+# Release guardrail: e2e runs *before* artifacts are built.
+# Triggered by version tags (RC and final) and manually on demand
+# (workflow_dispatch) so the suite can be exercised between releases.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain (from rust-toolchain.toml)
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - name: E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+
+  # Only attach artifacts for real tags (not manual runs).
+  release:
+    needs: e2e
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain (from rust-toolchain.toml)
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # The release binary embeds web/dist at compile time (rust-embed);
+      # the SPA must be built before cargo build or the artifact ships
+      # asset-less (dist is gitignored, so a fresh checkout has none).
+      - run: npm ci
+      - name: Build SPA
+        run: npm run build -w web
+      - name: Build release binary
+        run: cargo build --release --bin engrenage
+      - name: Attach binary to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/release/engrenage
+        # deb/Docker/Nix packaging jobs (Phase 6) plug in here, behind the
+        # same e2e gate.

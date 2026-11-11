@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain (from rust-toolchain.toml)
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Tests (unit + integration)
+        run: cargo test --workspace
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Prettier
+        run: npm run prettier:check -w web
+      - name: ESLint
+        run: npm run lint -w web
+      - name: Build (tsc + vite)
+        run: npm run build -w web
+
+  # Full-stack guardrail for PRs targeting main; skipped on dev pushes
+  # (condition-false jobs are marked skipped, so branch protection on main
+  # can safely require this job).
+  e2e:
+    needs: [backend, frontend]
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain (from rust-toolchain.toml)
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - name: E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true

@@ -1,0 +1,7 @@
+# Pinned toolchain for CI and non-Nix contributors.
+#
+# NOTE: keep in sync with the rust-overlay snapshot pinned in flake.nix
+# (currently snapshot/2026-03-11, which provides this same stable version).
+# CI does not use the flake; this file is what rustup/CI resolves.
+[toolchain]
+channel = "1.94.0"
