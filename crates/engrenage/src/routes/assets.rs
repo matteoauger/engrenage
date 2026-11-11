@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use axum::{
-    http::{header, Uri},
+    http::{Uri, header},
     response::{IntoResponse, Response},
 };
 use rust_embed::{EmbeddedFile, RustEmbed};
@@ -10,15 +10,14 @@ use crate::error::AppError;
 
 /// Static SPA assets, embedded into the binary at build time.
 /// In debug builds rust-embed reads the folder from disk instead.
-/// `allow_missing` keeps the crate compiling on a fresh clone where
-/// `web/dist` has not been built yet (it is a gitignored build artifact);
-/// lookups then return `None` and the handler reports a clean 404.
 #[derive(RustEmbed)]
 #[folder = "$CARGO_MANIFEST_DIR/../../web/dist"]
 #[allow_missing = true]
 struct Assets;
 
-pub(crate) fn has_index() -> bool {
+/// Whether the SPA bundle was built (an `index.html` exists). Public so
+/// integration tests can branch on it, mirroring the runtime warning.
+pub fn has_index() -> bool {
     Assets::get("index.html").is_some()
 }
 
@@ -46,9 +45,7 @@ pub async fn handler(uri: Uri) -> Response {
     // router by serving index.html.
     match Assets::get("index.html") {
         Some(file) => serve(file),
-        None => {
-            AppError::NotFound("SPA assets not built — run `npm run build -w web`".to_owned())
-                .into_response()
-        }
+        None => AppError::NotFound("SPA assets not built — run `npm run build -w web`".to_owned())
+            .into_response(),
     }
 }
