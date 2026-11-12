@@ -6,13 +6,17 @@
         "web",
         "e2e"
     ],
+    "devDependencies": {
+        "prettier": "^3.10.0"
+    },
     "scripts": {
         "dev:frontend": "npm run dev -w web",
         "dev:backend": "bacon run",
         "build": "npm run build -w web && cargo build",
         "test": "cargo test",
         "test:e2e": "npm run test -w e2e",
-        "prettier:check": "npm run prettier:check -w web",
+        "prettier": "prettier -w .",
+        "prettier:check": "prettier -c .",
         "lint": "npm run lint -w web && cargo clippy --all-targets -- -D warnings"
     }
 }

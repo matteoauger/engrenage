@@ -13,23 +13,23 @@ npm run test:e2e          # from the repo root
 CI always starts a fresh server; locally, an already-running one on the test
 port is reused (`reuseExistingServer: !process.env.CI`).
 
-## NixOS caveat
+## Chromium selection
 
-Playwright's bundled chromium is a dynamically linked generic-Linux binary and
-**cannot launch on stock NixOS** (stub-ld refuses it). The config handles this
-automatically, with an explicit priority:
+The bundled Playwright chromium is dynamically linked against generic Linux
+libraries and **cannot launch on stock NixOS** (stub-ld refuses it). The
+config resolves this without any OS sniffing:
 
-1. `E2E_CHROMIUM_PATH` — any explicit override (any OS)
-2. **NixOS only**: the natively built chromium from PATH — the flake devShell
-   ships it, so `nix develop -c npm run test:e2e` just works
-3. Everything else (CI, macOS, plain Linux): Playwright's bundled browser
+1. `E2E_CHROMIUM_PATH` — explicit override, wins everywhere
+2. **Locally** (any OS): a `chromium` on PATH is preferred — the flake
+   devShell ships a natively built one on NixOS, so
+   `nix develop -c npm run test:e2e` just works
+3. **CI** (`CI` env set): always the bundled browser — installed by the
+   workflow with `--with-deps`, never inheriting whatever the runner image
+   ships
 
-Alternative system-level fix: enable `programs.nix-ld` (+ its libraries) in
-your NixOS configuration and use the bundled browser everywhere. The devShell
-approach is preferred here because it stays inside the repo.
-
-CI (Ubuntu runners) is unaffected: no flake, no PATH chromium, bundled browser
-with `--with-deps` system libraries.
+Alternative system-level fix on NixOS: enable `programs.nix-ld` (+ its
+libraries) and use the bundled browser everywhere. The devShell approach is
+preferred here because it stays inside the repo.
 
 ## Scope
 
