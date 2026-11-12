@@ -12,8 +12,10 @@ pub enum AppError {
     NotFound(String),
 
     #[error("bad request: {0}")]
-    #[allow(dead_code)] // part of the HTTP contract; first /api handlers arrive with auth
     BadRequest(String),
+
+    #[error("unauthorized: {0}")]
+    Unauthorized(String),
 
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
@@ -24,6 +26,7 @@ impl IntoResponse for AppError {
         let (status, message) = match &self {
             AppError::NotFound(_) => (StatusCode::NOT_FOUND, self.to_string()),
             AppError::BadRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            AppError::Unauthorized(_) => (StatusCode::UNAUTHORIZED, self.to_string()),
             AppError::Internal(err) => {
                 tracing::error!(error = ?err, "internal error");
                 (

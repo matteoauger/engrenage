@@ -5,7 +5,6 @@
 //! public API live in `tests/`, not inline `#[cfg(test)]` modules.
 
 use axum::{
-    Router,
     body::Body,
     http::{Request, StatusCode},
 };
@@ -13,15 +12,13 @@ use tower::ServiceExt;
 
 mod common;
 
-use common::{app, body_string, has_index};
-
-fn router() -> Router {
-    app()
-}
+use common::{body_string, has_index, test_app};
 
 #[tokio::test]
 async fn health_returns_ok() {
-    let response = router()
+    let app = test_app();
+    let response = app
+        .router.clone()
         .oneshot(
             Request::builder()
                 .uri("/health")
@@ -36,8 +33,13 @@ async fn health_returns_ok() {
 }
 
 #[tokio::test]
-async fn unknown_api_route_is_404() {
-    let response = router()
+async fn unknown_api_route_requires_auth() {
+    // Contract change with the auth middleware: unknown /api paths now
+    // answer 401 for unauthenticated requests (never leak route existence);
+    // authenticated unknown paths still 404 via api_fallback.
+    let app = test_app();
+    let response = app
+        .router.clone()
         .oneshot(
             Request::builder()
                 .uri("/api/does-not-exist")
@@ -47,15 +49,16 @@ async fn unknown_api_route_is_404() {
         .await
         .unwrap();
 
-    assert_eq!(response.status(), StatusCode::NOT_FOUND);
-    assert!(body_string(response).await.contains("unknown api route"));
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
 
 #[tokio::test]
 async fn missing_asset_with_extension_is_404() {
     // Holds whether or not `web/dist` is built: a missing extension'd
     // path is never SPA-fallbacked.
-    let response = router()
+    let app = test_app();
+    let response = app
+        .router.clone()
         .oneshot(
             Request::builder()
                 .uri("/assets/does-not-exist.js")
@@ -71,7 +74,9 @@ async fn missing_asset_with_extension_is_404() {
 
 #[tokio::test]
 async fn unknown_route_falls_back_to_spa() {
-    let response = router()
+    let app = test_app();
+    let response = app
+        .router.clone()
         .oneshot(
             Request::builder()
                 .uri("/some-page")

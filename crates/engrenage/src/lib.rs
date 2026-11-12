@@ -1,4 +1,6 @@
+pub mod auth;
 pub mod config;
+pub mod db;
 pub mod error;
 pub mod routes;
 pub mod state;
@@ -45,6 +47,9 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     std::fs::create_dir_all(&config.data_dir)
         .with_context(|| format!("creating data dir {}", config.data_dir.display()))?;
 
+    let db = db::Db::open(&config.data_dir.join("engrenage.db"))?;
+    auth::bootstrap::ensure_bootstrap_admin(&db).await;
+
     tracing::info!(
         listen_addr = %config.listen_addr,
         data_dir = %config.data_dir.display(),
@@ -52,7 +57,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     );
 
     let listener = tokio::net::TcpListener::bind(&config.listen_addr).await?;
-    let app = routes::build_router(AppState::new(config));
+    let app = routes::build_router(AppState::new(config, db));
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
