@@ -50,6 +50,8 @@
               # Extra tools
               github-cli
               bruno
+              # Release-notes preview: `git cliff --latest --strip all`
+              git-cliff
 
               # Natively built chromium for the e2e suite on NixOS
               # (e2e/playwright.config.ts picks it up from PATH).

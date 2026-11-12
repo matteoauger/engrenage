@@ -38,6 +38,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        # git-cliff generates release notes from the full commit history
+        # (tags + squash-merge commits); a shallow checkout yields nothing.
+        with:
+          fetch-depth: 0
       - name: Install Rust toolchain (from rust-toolchain.toml)
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - uses: Swatinem/rust-cache@v2
@@ -53,9 +57,20 @@ jobs:
         run: npm run build -w web
       - name: Build release binary
         run: cargo build --release --bin engrenage
+      - name: Generate release notes
+        # Conventional-commit changelog (feat/fix/breaking only, PR links);
+        # policy + template live in cliff.toml (DECISIONS §9).
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --latest --strip all
+        env:
+          OUTPUT: release-notes.md
+          GITHUB_REPO: ${{ github.repository }}
       - name: Attach binary to the GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: release-notes.md
           files: target/release/engrenage
         # deb/Docker/Nix packaging jobs (Phase 6) plug in here, behind the
         # same e2e gate.

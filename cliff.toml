@@ -1,0 +1,64 @@
+# git-cliff configuration: release notes from conventional commits.
+#
+# Policy (docs/DECISIONS.md §9): only feat / fix / breaking changes are
+# surfaced; every other commit type is invisible. The changelog is never
+# committed — release.yml generates notes for the GitHub Release with
+# `git cliff --latest --strip all` (orhun/git-cliff-action@v4).
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+header = ""
+
+body = """
+{%- macro remote_url() -%}
+  https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}
+{%- endmacro -%}
+
+{% if version -%}
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else -%}
+    ## [Unreleased]
+{% endif -%}
+
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | striptags | trim | upper_first }}
+    {%- for commit in commits %}
+        - {{ commit.message | split(pat="\n") | first | upper_first | trim }}\
+            {% if commit.remote.username %} by @{{ commit.remote.username | replace(from="[bot]", to="") }}{%- endif -%}
+            {% if commit.remote.pr_number %} in \
+            [#{{ commit.remote.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.remote.pr_number }}) \
+            {%- endif -%}
+    {% endfor %}
+{% endfor %}
+"""
+
+footer = ""
+
+# Remove leading and trailing whitespaces from the changelog's body.
+trim = true
+
+[git]
+# Parse commits according to the conventional commits specification.
+conventional_commits = true
+# Non-conventional commits (merge commits, typos) never leak into notes.
+filter_unconventional = true
+
+# Groups come out in alphabetical order; the `<!-- N -->` markers force
+# Breaking → Added → Fixed and are stripped by the template.
+commit_parsers = [
+  { field = "breaking", pattern = "true", group = "<!-- 0 -->Breaking Changes" },
+  { message = "^feat", group = "<!-- 1 -->Added" },
+  { message = "^fix", group = "<!-- 2 -->Fixed" },
+]
+
+# feat/fix/breaking only: refactor, tests, ci, chore, docs … disappear.
+filter_commits = true
+# Safety net: a breaking commit must never vanish through parser changes.
+protect_breaking_commits = true
+
+# Only v-prefixed semver tags define release ranges.
+tag_pattern = "v[0-9].*"
+
+topo_order = false
+# Narrative order inside each section.
+sort_commits = "oldest"
