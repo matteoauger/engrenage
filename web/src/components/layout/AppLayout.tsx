@@ -1,5 +1,9 @@
+import { useNavigate } from 'react-router'
 import { NavLink, Outlet } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { apiPost } from '../../api/client'
 import { cn } from '../../lib/cn'
+import { useMe } from '../../hooks/useMe'
 
 /**
  * App shell: sidebar with placeholder navigation + content area.
@@ -58,13 +62,45 @@ export function AppLayout() {
                         )
                     )}
                 </nav>
-                <div className="mt-auto border-t p-4 text-xs text-text-muted">
-                    v0.1.0-dev
+                <div className="mt-auto border-t p-4">
+                    <UserBox />
+                    <p className="mt-2 text-xs text-text-muted">v0.1.0-dev</p>
                 </div>
             </aside>
             <main className="flex-1 overflow-auto p-6">
                 <Outlet />
             </main>
+        </div>
+    )
+}
+
+function UserBox() {
+    const me = useMe()
+    const navigate = useNavigate()
+    const queryClient = useQueryClient()
+
+    async function logout() {
+        try {
+            await apiPost('/api/auth/logout', {})
+        } finally {
+            await queryClient.invalidateQueries({ queryKey: ['me'] })
+            navigate('/login', { replace: true })
+        }
+    }
+
+    return (
+        <div className="flex items-center justify-between gap-2">
+            <span className="truncate text-sm" title={me.data?.username ?? ''}>
+                {me.data?.username ?? '…'}
+            </span>
+            <button
+                type="button"
+                onClick={logout}
+                className="rounded-md px-2 py-1 text-xs text-text-muted hover:bg-surface-hover hover:text-text"
+                aria-label="Sign out"
+            >
+                Sign out
+            </button>
         </div>
     )
 }
