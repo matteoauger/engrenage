@@ -3,7 +3,7 @@
 # Policy (docs/DECISIONS.md §9): only feat / fix / breaking changes are
 # surfaced; every other commit type is invisible. The changelog is never
 # committed — release.yml generates notes for the GitHub Release with
-# `git cliff --latest --strip all` (orhun/git-cliff-action@v4).
+# `git cliff --current --strip all` (orhun/git-cliff-action@v4).
 # https://git-cliff.org/docs/configuration
 
 [changelog]
@@ -58,6 +58,12 @@ protect_breaking_commits = true
 
 # Only v-prefixed semver tags define release ranges.
 tag_pattern = "v[0-9].*"
+
+# Pre-release tags (rc/alpha/beta/pre…) are not releases: no section of their
+# own; their commits roll into the next final release's section. Verified with
+# git-cliff 2.14: `git cliff --current --strip all` at a final tag then yields
+# the whole milestone (RC commits included).
+ignore_tags = ".*-.*"
 
 topo_order = false
 # Narrative order inside each section.

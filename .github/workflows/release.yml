@@ -57,20 +57,29 @@ jobs:
         run: npm run build -w web
       - name: Build release binary
         run: cargo build --release --bin engrenage
+      # Final releases: milestone-aggregated section for this tag (cliff.toml
+      # ignores pre-release tags, so -rc.N commits roll in here). Pre-releases
+      # get GitHub auto-generated notes instead (see next step).
       - name: Generate release notes
-        # Conventional-commit changelog (feat/fix/breaking only, PR links);
-        # policy + template live in cliff.toml (DECISIONS §9).
+        if: ${{ !contains(github.ref_name, '-') }}
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
-          args: --latest --strip all
+          args: --current --strip all
         env:
           OUTPUT: release-notes.md
           GITHUB_REPO: ${{ github.repository }}
+      # Pre-releases (tags containing '-', e.g. v0.2.0-rc.1): minimal body; the
+      # GitHub Release is marked pre-release and GitHub appends its own notes.
+      - name: Pre-release notes placeholder
+        if: ${{ contains(github.ref_name, '-') }}
+        run: echo "Pre-release build — see the commit history and CI status." > release-notes.md
       - name: Attach binary to the GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           body_path: release-notes.md
           files: target/release/engrenage
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: ${{ contains(github.ref_name, '-') }}
         # deb/Docker/Nix packaging jobs (Phase 6) plug in here, behind the
         # same e2e gate.
