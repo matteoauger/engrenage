@@ -358,12 +358,11 @@ async fn login_rejects_oversized_username_without_audit_write() {
     let audit_rows = app
         .db
         .with_conn(|conn| {
-            Ok(conn
-                .query_row(
-                    "SELECT COUNT(*) FROM audit_log WHERE username = ?1",
-                    [long_username],
-                    |row| row.get::<_, i64>(0),
-                )?)
+            Ok(conn.query_row(
+                "SELECT COUNT(*) FROM audit_log WHERE username = ?1",
+                [long_username],
+                |row| row.get::<_, i64>(0),
+            )?)
         })
         .await
         .unwrap();

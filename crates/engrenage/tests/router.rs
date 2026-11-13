@@ -18,7 +18,8 @@ use common::{body_string, has_index, test_app};
 async fn health_returns_ok() {
     let app = test_app();
     let response = app
-        .router.clone()
+        .router
+        .clone()
         .oneshot(
             Request::builder()
                 .uri("/health")
@@ -39,7 +40,8 @@ async fn unknown_api_route_requires_auth() {
     // authenticated unknown paths still 404 via api_fallback.
     let app = test_app();
     let response = app
-        .router.clone()
+        .router
+        .clone()
         .oneshot(
             Request::builder()
                 .uri("/api/does-not-exist")
@@ -58,7 +60,8 @@ async fn missing_asset_with_extension_is_404() {
     // path is never SPA-fallbacked.
     let app = test_app();
     let response = app
-        .router.clone()
+        .router
+        .clone()
         .oneshot(
             Request::builder()
                 .uri("/assets/does-not-exist.js")
@@ -76,7 +79,8 @@ async fn missing_asset_with_extension_is_404() {
 async fn unknown_route_falls_back_to_spa() {
     let app = test_app();
     let response = app
-        .router.clone()
+        .router
+        .clone()
         .oneshot(
             Request::builder()
                 .uri("/some-page")
