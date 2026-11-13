@@ -1,7 +1,4 @@
-# Pinned toolchain for CI and non-Nix contributors.
-#
-# NOTE: keep in sync with the rust-overlay snapshot pinned in flake.nix
-# (currently snapshot/2026-03-11, which provides this same stable version).
-# CI does not use the flake; this file is what rustup/CI resolves.
+# NOTE: after a channel bump, run `nix flake update rust-overlay`
 [toolchain]
-channel = "1.94.0"
+channel = "1.100.0"
+components = ["rustfmt", "clippy", "rust-analyzer"]
