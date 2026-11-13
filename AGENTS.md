@@ -53,6 +53,8 @@ CI parity (`.github/workflows/ci.yml`): Rust side = fmt → clippy → `cargo te
 - Trunk-based: short-lived `feat/<name>` branches, squash-merge PRs into `main`.
 - **Conventional commits** (`feat:`, `fix:`, `chore:` …) — the changelog and release notes are generated from them by git-cliff at tag time; there is no `CHANGELOG.md`. Preview: `git cliff --latest --strip all`.
 - Semantic-ish versioning from milestone tags (`v0.x`); commits must be structured for changelog extraction.
+- **The project version lives only in the Cargo workspace.** npm packages are private and version-less (never publish; nothing reads their version). Bump everything with `npm run bump -- <version>` (`scripts/bump.sh`: rewrites `^version` in every `crates/*/Cargo.toml`, refreshes member versions in `Cargo.lock`).
+- **Release = commit → tag.** `npm run bump -- <ver>` → commit `chore: bump version to <ver>` → `git tag vX.Y.Z` → push the tag. `release.yml` runs e2e first, then builds the SPA + release binary and attaches them to the GitHub Release with git-cliff notes. No pre-release branch for ordinary tags.
 
 ## Code quality expectations
 
