@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.zst";
     rust-overlay = {
-      url = "github:oxalica/rust-overlay/snapshot/2026-03-11";
+      url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -34,9 +34,8 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              # Rust toolchain
-              rust-bin.stable.latest.default
-              rust-analyzer
+              # Rust toolchain derived from rust-toolchain.toml
+              (rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
               bacon
 
               # Node toolchain
@@ -50,8 +49,7 @@
               # Extra tools
               github-cli
               bruno
-              # Release-notes preview: `git cliff --latest --strip all`
-              git-cliff
+              git-cliff # Release-notes preview: `git cliff --latest --strip all`
 
               # Natively built chromium for the e2e suite on NixOS
               # (e2e/playwright.config.ts picks it up from PATH).
