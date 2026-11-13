@@ -1,0 +1,6 @@
+semi = false
+singleQuote = true
+bracketSpacing = true
+objectWrap = "preserve"
+quoteProps = "as-needed"
+trailingComma = "es5"

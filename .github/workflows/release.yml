@@ -1,0 +1,85 @@
+name: Release
+
+# Release guardrail: e2e runs *before* artifacts are built.
+# Triggered by version tags (RC and final) and manually on demand
+# (workflow_dispatch) so the suite can be exercised between releases.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Rust toolchain (from rust-toolchain.toml)
+        uses: actions-rust-lang/setup-rust-toolchain@v2
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - name: E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+
+  # Only attach artifacts for real tags (not manual runs).
+  release:
+    needs: e2e
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        # git-cliff generates release notes from the full commit history
+        # (tags + squash-merge commits); a shallow checkout yields nothing.
+        with:
+          fetch-depth: 0
+      - name: Install Rust toolchain (from rust-toolchain.toml)
+        uses: actions-rust-lang/setup-rust-toolchain@v2
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      # The release binary embeds web/dist at compile time (rust-embed);
+      # the SPA must be built before cargo build or the artifact ships
+      # asset-less (dist is gitignored, so a fresh checkout has none).
+      - run: npm ci
+      - name: Build SPA
+        run: npm run build -w web
+      - name: Build release binary
+        run: cargo build --release --bin engrenage
+      # Final releases: milestone-aggregated section for this tag (cliff.toml
+      # ignores pre-release tags, so -rc.N commits roll in here). Pre-releases
+      # get GitHub auto-generated notes instead (see next step).
+      - name: Generate release notes
+        if: ${{ !contains(github.ref_name, '-') }}
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --current --strip all
+        env:
+          OUTPUT: release-notes.md
+          GITHUB_REPO: ${{ github.repository }}
+      # Pre-releases (tags containing '-', e.g. v0.2.0-rc.1): minimal body; the
+      # GitHub Release is marked pre-release and GitHub appends its own notes.
+      - name: Pre-release notes placeholder
+        if: ${{ contains(github.ref_name, '-') }}
+        run: echo "Pre-release build — see the commit history and CI status." > release-notes.md
+      - name: Attach binary to the GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: release-notes.md
+          files: target/release/engrenage
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: ${{ contains(github.ref_name, '-') }}
+        # deb/Docker/Nix packaging jobs (Phase 6) plug in here, behind the
+        # same e2e gate.

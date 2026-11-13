@@ -1,0 +1,7 @@
+/target
+node_modules/
+web/dist/
+engrenage.toml
+data/
+e2e/test-results/
+e2e/playwright-report/
